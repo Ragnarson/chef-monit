@@ -1,4 +1,4 @@
-# chef-monit  [![Build Status](https://secure.travis-ci.org/phlipper/chef-monit.png)](http://travis-ci.org/phlipper/chef-monit) [![Code Climate](https://codeclimate.com/badge.png)](https://codeclimate.com/github/phlipper/chef-monit)
+# chef-monit  [![Build Status](http://img.shields.io/travis-ci/phlipper/chef-monit.png)](http://travis-ci.org/phlipper/chef-monit)
 
 ## Description
 
@@ -58,52 +58,66 @@ default["monit"]["start_delay"] = 0
 default["monit"]["polling_frequency"] = 20
 
 # Use syslog for logging instead of a logfile.
-default["monit"]["use_syslog"]        = true
+default["monit"]["use_syslog"] = true
 
 # If not using syslog, the log file that monit will use.
-default["monit"]["logfile"]           = "/var/log/monit.log"
+default["monit"]["logfile"] = "/var/log/monit.log"
+
+# Where Monit stores unique Monit instance id
+default["monit"]["idfile"]            = "/var/.monit.id"
+
+# Where Monit stores Monit state file
+default["monit"]["statefile"]         = "/var/lib/monit/state"
 
 # Enable emails for internal monit alerts
-default["monit"]["mail_alerts"]       = true
+default["monit"]["mail_alerts"] = true
+
+# Ignore alerts for specific events
+# Possible events include: action, checksum, connection, content, data, exec, fsflags, gid, icmp, instance, invalid, nonexist, permission, pid, ppid, resource, size, status, timeout, timestamp, uid, uptime.
+default["monit"]["alert_ignore_events"] = []
 
 # Email address that will be notified of events.
-default["monit"]["alert_email"]       = "root@localhost"
+default["monit"]["alert_email"] = "root@localhost"
 
 # Enable the web interface and define credentials.
 default["monit"]["web_interface"] = {
-  :enable  => true,
-  :port    => 2812,
-  :address => "localhost",
-  :allow   => ["localhost", "admin:b1gbr0th3r"]
+  enable:  true,
+  port:    2812,
+  address: "localhost",
+  allow:   ["localhost", "admin:b1gbr0th3r"]
 }
 
 # Email settings that will be used for notification of events.
 default["monit"]["mail"] = {
-  :hostname => "localhost",
-  :port     => 25,
-  :username => nil,
-  :password => nil,
-  :from     => "monit@$HOST",
-  :subject  => "$SERVICE $EVENT at $DATE",
-  :message  => "Monit $ACTION $SERVICE at $DATE on $HOST,\n\n$DESCRIPTION\n\nDutifully,\nMonit",
-  :security => nil,  # 'SSLV2'|'SSLV3'|'TLSV1'
-  :timeout  => 30
+  hostname: "localhost",
+  port:     25,
+  username: nil,
+  password: nil,
+  encrypted_credentials: nil,
+  encrypted_credentials_data_bag: "credentials",
+  from:     "monit@$HOST",
+  subject:  "$SERVICE $EVENT at $DATE",
+  message:  "Monit $ACTION $SERVICE at $DATE on $HOST,\n\n$DESCRIPTION\n\nDutifully,\nMonit",
+  security: nil,  # 'SSLV2'|'SSLV3'|'TLSV1'
+  timeout:  30
 }
 
 case node["platform_family"]
 when "rhel", "fedora", "suse"
   default["monit"]["main_config_path"] = "/etc/monit.conf"
-  default["monit"]["includes_dir"]     = "/etc/monit.d"
+  default["monit"]["includes_dir"] = "/etc/monit.d"
 else
   default["monit"]["main_config_path"] = "/etc/monit/monitrc"
-  default["monit"]["includes_dir"]     = "/etc/monit/conf.d"
+  default["monit"]["includes_dir"] = "/etc/monit/conf.d"
 end
 
 # The monit::default recipe will load these monit_monitrc resources automatically
 # NOTE setting this attribute at the default level will append values to the array
-default["monit"]["default_monitrc_configs"] = ["load", "ssh"]
-```
+default["monit"]["default_monitrc_configs"] = %w[load ssh]
 
+# Whether the monit service should be reloaded when a configuration changes
+default["monit"]["reload_on_change"] = true
+```
 
 ## Contributors
 
@@ -117,6 +131,10 @@ Many thanks go to the following [contributors](https://github.com/phlipper/chef-
     * update syntax to be Ruby 1.8-compatible
 * **[@dwradcliffe](https://github.com/dwradcliffe)**
     * typo fix for README
+    * fix logging logic
+    * whyrun support for monitrc provider
+    * support for reloading monit without restart
+    * don't render 'use address' if no address is provided
 * **[@tjwallace](https://github.com/tjwallace)**
     * load default monitrc configs from an attribute
 * **[@tomdz](https://github.com/tomdz)**
@@ -133,6 +151,19 @@ Many thanks go to the following [contributors](https://github.com/phlipper/chef-
     * restart on default monitrc configs change
     * restart monit service if the monit config changes
     * fix platform family logic
+* **[@maciejgalkiewicz](https://github.com/maciejgalkiewicz)**
+    * fix logging logic
+* **[@pauloricardomg](https://github.com/pauloricardomg)**
+    * add `alert_ignore_events` attribute
+    * add `reload_on_change` attribute
+* **[@drywheat](https://github.com/drywheat)**
+    * support encrypted data bag for smtp credentials
+* **[@esigler](https://github.com/esigler)**
+    * allow either style of monit startup flag to work
+* **[@evan2645](https://github.com/evan2645)**
+    * fix bug in which monit is not started during bootstrap
+* **[@mvdkleijn](https://github.com/mvdkleijn)**
+    * add settings for idfile and statefile
 
 
 ## Contributing
@@ -148,6 +179,8 @@ Many thanks go to the following [contributors](https://github.com/phlipper/chef-
 
 **chef-monit**
 
-* Freely distributable and licensed under the [MIT license](http://phlipper.mit-license.org/2011-2013/license.html).
-* Copyright (c) 2011-2013 Phil Cohen (github@phlippers.net) [![endorse](http://api.coderwall.com/phlipper/endorsecount.png)](http://coderwall.com/phlipper)
+* Freely distributable and licensed under the [MIT license](http://phlipper.mit-license.org/2011-2014/license.html).
+* Copyright (c) 2011-2014 Phil Cohen (github@phlippers.net) [![endorse](http://api.coderwall.com/phlipper/endorsecount.png)](http://coderwall.com/phlipper)  [![Gittip](http://img.shields.io/gittip/phlipper.png)](https://www.gittip.com/phlipper/)
 * http://phlippers.net/
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/phlipper/chef-monit/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
